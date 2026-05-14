@@ -1,6 +1,0 @@
-{
-  "installCommand": "npm install --prefix otosync",
-  "buildCommand": "npm run build --prefix otosync",
-  "outputDirectory": "otosync/.next",
-  "framework": "nextjs"
-}
