@@ -23,20 +23,20 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
 
   const { pathname } = request.nextUrl
 
-  const protectedRoutes = ['/vault', '/folder', '/settings']
+  const protectedRoutes = ['/vault', '/folder', '/settings', '/starred', '/folders']
   const isProtected = protectedRoutes.some((r) => pathname.startsWith(r))
 
-  if (!user && isProtected) {
+  if (!session && isProtected) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)
   }
 
-  if (user && pathname === '/') {
+  if (session && pathname === '/') {
     const url = request.nextUrl.clone()
     url.pathname = '/vault'
     return NextResponse.redirect(url)
