@@ -1,0 +1,9 @@
+{
+  "name": "sync-workspace",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix otosync",
+    "build": "npm run build --prefix otosync",
+    "start": "npm run start --prefix otosync"
+  }
+}

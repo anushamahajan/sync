@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sync</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 320px;
+      background: #0f172a;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #f1f5f9;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 14px 10px;
+      border-bottom: 1px solid #1e293b;
+    }
+    .header-left { display: flex; align-items: center; gap: 8px; }
+    .header-left img { width: 20px; height: 20px; border-radius: 5px; }
+    .header-left span { font-size: 14px; font-weight: 700; letter-spacing: -0.2px; }
+    .badge {
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+    .badge.connected    { background: #064e3b; color: #6ee7b7; }
+    .badge.disconnected { background: #1e293b; color: #64748b; }
+
+    /* ── Connect screen ── */
+    #screen-connect { padding: 28px 20px 24px; text-align: center; }
+    #screen-connect img { width: 40px; height: 40px; border-radius: 10px; margin-bottom: 14px; }
+    #screen-connect h2 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    #screen-connect p  { font-size: 12px; color: #64748b; line-height: 1.5; margin-bottom: 20px; }
+    #btn-connect {
+      width: 100%; padding: 11px;
+      background: #0891b2; color: #fff;
+      border: none; border-radius: 10px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    #btn-connect:hover:not(:disabled) { background: #0e7490; }
+    #btn-connect:disabled { background: #1e293b; color: #475569; cursor: not-allowed; }
+
+    /* ── Capture screen ── */
+    #screen-capture { padding: 11px 14px 14px; }
+
+    /* type tabs — single row, 5 items */
+    .type-row {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 11px;
+    }
+    .type-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 7px 2px 6px;
+      background: #1e293b;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: #475569;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.13s;
+      letter-spacing: 0.2px;
+    }
+    .type-btn .icon { font-size: 15px; line-height: 1; }
+    .type-btn:hover:not(.active) { color: #94a3b8; background: #243044; }
+    .type-btn.active {
+      background: rgba(8,145,178,0.12);
+      border-color: #0891b2;
+      color: #38bdf8;
+    }
+
+    /* shared field styles */
+    label {
+      display: block;
+      font-size: 10px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-bottom: 4px;
+    }
+    .auto-tag { color: #0891b2; font-weight: 500; margin-left: 4px; }
+
+    textarea, input[type="text"], input[type="url"], select {
+      width: 100%;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #f1f5f9;
+      font-family: inherit;
+      font-size: 13px;
+      padding: 8px 10px;
+      outline: none;
+      resize: none;
+      transition: border-color 0.13s;
+    }
+    textarea { height: 96px; line-height: 1.5; }
+    textarea:focus, input:focus, select:focus { border-color: #0891b2; }
+    ::placeholder { color: #475569; }
+    select { appearance: none; cursor: pointer; color: #94a3b8; }
+
+    .field { margin-bottom: 8px; }
+
+    /* file drop zone */
+    .drop-zone {
+      border: 1.5px dashed #334155;
+      border-radius: 8px;
+      padding: 20px 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.13s;
+      background: #1e293b;
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: #0891b2;
+      background: rgba(8,145,178,0.07);
+    }
+    .drop-zone .dz-icon { font-size: 22px; margin-bottom: 6px; }
+    .drop-zone .dz-label { font-size: 12px; color: #64748b; }
+    .drop-zone .dz-hint  { font-size: 10px; color: #475569; margin-top: 3px; }
+
+    /* file preview after selection */
+    .file-preview {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 9px 11px;
+    }
+    .file-preview.visible { display: flex; }
+    .file-preview .fp-img {
+      width: 40px; height: 40px;
+      object-fit: cover;
+      border-radius: 5px;
+      flex-shrink: 0;
+      background: #0f172a;
+    }
+    .file-preview .fp-icon {
+      width: 40px; height: 40px;
+      background: #0f172a;
+      border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .file-preview .fp-info { flex: 1; min-width: 0; }
+    .file-preview .fp-name {
+      font-size: 12px; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .file-preview .fp-size { font-size: 10px; color: #64748b; margin-top: 2px; }
+    .file-preview .fp-clear {
+      background: none; border: none; color: #64748b;
+      font-size: 14px; cursor: pointer; padding: 2px 4px;
+    }
+    .file-preview .fp-clear:hover { color: #f1f5f9; }
+
+    /* progress bar */
+    .progress-wrap {
+      display: none;
+      background: #1e293b;
+      border-radius: 6px;
+      height: 4px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+    .progress-wrap.visible { display: block; }
+    .progress-bar {
+      height: 100%;
+      background: #0891b2;
+      border-radius: 6px;
+      width: 0%;
+      transition: width 0.2s;
+    }
+
+    /* drive */
+    #fields-drive .drive-hint {
+      font-size: 10px; color: #475569; margin-top: 5px; line-height: 1.5;
+    }
+
+    /* folder + footer */
+    #select-folder { color: #94a3b8; }
+
+    .footer { display: flex; gap: 8px; margin-top: 11px; }
+    #btn-save {
+      flex: 1; padding: 11px;
+      background: #0891b2; color: #fff;
+      border: none; border-radius: 10px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    #btn-save:hover:not(:disabled) { background: #0e7490; }
+    #btn-save:disabled { background: #1e293b; color: #475569; cursor: not-allowed; }
+    #btn-disconnect {
+      padding: 11px 12px;
+      background: transparent;
+      border: 1px solid #1e293b;
+      border-radius: 10px;
+      color: #475569; font-size: 13px; cursor: pointer;
+    }
+    #btn-disconnect:hover { border-color: #334155; color: #64748b; }
+
+    /* error */
+    .error-bar {
+      display: none;
+      font-size: 11px; color: #fca5a5;
+      background: #1c0a0a; border: 1px solid #7f1d1d;
+      border-radius: 7px; padding: 7px 10px;
+      margin-top: 8px; line-height: 1.4;
+    }
+    .error-bar.visible { display: block; }
+
+    /* success screen */
+    #screen-success {
+      padding: 32px 20px;
+      text-align: center;
+      display: none;
+    }
+    .check-circle {
+      width: 44px; height: 44px;
+      background: #064e3b; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 14px; font-size: 20px;
+    }
+    #screen-success h2 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    #screen-success p  { font-size: 12px; color: #64748b; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <img src="icons/icon-48.png" alt="" />
+      <span>Sync</span>
+    </div>
+    <span id="status-badge" class="badge disconnected">not connected</span>
+  </div>
+
+  <!-- ── Connect screen ── -->
+  <div id="screen-connect">
+    <img src="icons/icon-48.png" alt="Sync" />
+    <h2>Connect your vault</h2>
+    <p>Open Sync in any browser tab, then click below to link your account.</p>
+    <button id="btn-connect">Connect</button>
+  </div>
+
+  <!-- ── Capture screen ── -->
+  <div id="screen-capture" style="display:none">
+
+    <!-- Type selector -->
+    <div class="type-row">
+      <button class="type-btn active" data-type="text">
+        <span class="icon">✏️</span>TEXT
+      </button>
+      <button class="type-btn" data-type="link">
+        <span class="icon">🔗</span>LINK
+      </button>
+      <button class="type-btn" data-type="image">
+        <span class="icon">🖼</span>IMAGE
+      </button>
+      <button class="type-btn" data-type="file">
+        <span class="icon">📄</span>FILE
+      </button>
+      <button class="type-btn" data-type="drive">
+        <span class="icon">📁</span>DRIVE
+      </button>
+    </div>
+
+    <!-- TEXT -->
+    <div id="fields-text">
+      <div class="field">
+        <label>Content <span id="auto-text-badge" class="auto-tag" style="display:none">● auto-filled</span></label>
+        <textarea id="input-text" placeholder="Paste or type anything…"></textarea>
+      </div>
+    </div>
+
+    <!-- LINK -->
+    <div id="fields-link" style="display:none">
+      <div class="field">
+        <label>URL <span id="auto-link-badge" class="auto-tag" style="display:none">● current tab</span></label>
+        <input type="url" id="input-url" placeholder="https://…" />
+      </div>
+      <div class="field">
+        <label>Title (optional)</label>
+        <input type="text" id="input-title" placeholder="Page title…" />
+      </div>
+    </div>
+
+    <!-- IMAGE -->
+    <div id="fields-image" style="display:none">
+      <div class="field">
+        <label>Image file</label>
+        <div class="drop-zone" id="dz-image">
+          <div class="dz-icon">🖼</div>
+          <div class="dz-label">Click to choose an image</div>
+          <div class="dz-hint">JPG, PNG, GIF, WebP, SVG</div>
+        </div>
+        <div class="file-preview" id="fp-image">
+          <img class="fp-img" id="fp-image-img" src="" alt="" />
+          <div class="fp-info">
+            <div class="fp-name" id="fp-image-name"></div>
+            <div class="fp-size" id="fp-image-size"></div>
+          </div>
+          <button class="fp-clear" id="fp-image-clear">✕</button>
+        </div>
+        <input type="file" id="file-input-image" accept="image/*" style="display:none" />
+        <div class="progress-wrap" id="prog-image"><div class="progress-bar" id="progbar-image"></div></div>
+      </div>
+    </div>
+
+    <!-- FILE -->
+    <div id="fields-file" style="display:none">
+      <div class="field">
+        <label>File</label>
+        <div class="drop-zone" id="dz-file">
+          <div class="dz-icon">📄</div>
+          <div class="dz-label">Click to choose a file</div>
+          <div class="dz-hint">Any file type · max 50 MB</div>
+        </div>
+        <div class="file-preview" id="fp-file">
+          <div class="fp-icon" id="fp-file-icon">📄</div>
+          <div class="fp-info">
+            <div class="fp-name" id="fp-file-name"></div>
+            <div class="fp-size" id="fp-file-size"></div>
+          </div>
+          <button class="fp-clear" id="fp-file-clear">✕</button>
+        </div>
+        <input type="file" id="file-input-file" accept="*/*" style="display:none" />
+        <div class="progress-wrap" id="prog-file"><div class="progress-bar" id="progbar-file"></div></div>
+      </div>
+    </div>
+
+    <!-- DRIVE -->
+    <div id="fields-drive" style="display:none">
+      <div class="field">
+        <label>Google Drive URL</label>
+        <input type="url" id="input-drive-url" placeholder="https://docs.google.com/…" />
+        <p class="drive-hint">Paste any Google Docs, Sheets, Slides, or Drive file link.</p>
+      </div>
+      <div class="field">
+        <label>Title (optional)</label>
+        <input type="text" id="input-drive-title" placeholder="Document title…" />
+      </div>
+    </div>
+
+    <!-- Folder -->
+    <div class="field">
+      <label>Folder</label>
+      <select id="select-folder">
+        <option value="">No folder</option>
+      </select>
+    </div>
+
+    <div id="error-bar" class="error-bar"></div>
+
+    <div class="footer">
+      <button id="btn-save">Save to Vault</button>
+      <button id="btn-disconnect" title="Disconnect">✕</button>
+    </div>
+  </div>
+
+  <!-- ── Success screen ── -->
+  <div id="screen-success">
+    <div class="check-circle">✓</div>
+    <h2>Saved to vault</h2>
+    <p id="success-detail"></p>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

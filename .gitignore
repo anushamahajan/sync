@@ -1,0 +1,17 @@
+# Next.js
+otosync/node_modules
+otosync/.next/
+otosync/out/
+otosync/.vercel
+otosync/next-env.d.ts
+otosync/tsconfig.tsbuildinfo
+
+# Env — never commit secrets
+otosync/.env*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
