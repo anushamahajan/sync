@@ -83,13 +83,9 @@ export function FeedCard({ item, folders, onDelete, onToggleStar, onMove, onOpen
           <ContentPreview item={item} />
 
           {/* AI description */}
-          <div className="mt-1">
-            {item.ai_description ? (
-              <p className="text-xs text-[#888888] leading-relaxed">{item.ai_description}</p>
-            ) : (
-              <div className="skeleton h-3 w-3/4 mt-1" />
-            )}
-          </div>
+          {item.ai_description && (
+            <p className="text-xs text-[#888888] leading-relaxed mt-1">{item.ai_description}</p>
+          )}
         </div>
 
         {/* Actions */}
@@ -178,7 +174,7 @@ function ContentPreview({ item }: { item: Item }) {
   if (item.type === 'drive_link') {
     return (
       <div>
-        <p className={cls}>{item.drive_file_title || item.link_url || 'Google Drive file'}</p>
+        <p className={cls}>{item.drive_file_title || 'Google Drive file'}</p>
         <p className="text-xs text-[#888888] mt-0.5">Google Drive · reading coming soon</p>
       </div>
     )
