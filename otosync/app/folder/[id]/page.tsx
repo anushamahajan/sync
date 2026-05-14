@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState, useMemo, use } from 'react'
+import { useState, useMemo, use, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Plus, Search, X, Sparkles, MessageSquare } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
@@ -34,6 +34,13 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
   const [moveItem, setMoveItem] = useState<Item | null>(null)
   const [search, setSearch] = useState('')
+
+  // Keep selectedItem in sync with live item updates
+  useEffect(() => {
+    if (!selectedItem) return
+    const updated = items.find((i) => i.id === selectedItem.id)
+    if (updated) setSelectedItem(updated)
+  }, [items])
 
   const folder = folders.find((f) => f.id === id)
 

@@ -97,6 +97,11 @@ export function useVault(folderId?: string) {
     fetchItems(next)
   }
 
+  function refresh() {
+    setPage(0)
+    fetchItems(0, true)
+  }
+
   async function deleteItem(id: string) {
     await supabase.from('items').delete().eq('id', id)
     setItems((prev) => prev.filter((item) => item.id !== id))
@@ -116,7 +121,7 @@ export function useVault(folderId?: string) {
     )
   }
 
-  return { items, loading, hasMore, loadMore, deleteItem, toggleStar, moveToFolder }
+  return { items, loading, hasMore, loadMore, deleteItem, toggleStar, moveToFolder, refresh }
 }
 
 export function useStarredItems() {

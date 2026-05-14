@@ -6,8 +6,9 @@ import {
   Sparkles, Plus, Check, ChevronRight, FileText, Image, File, Link,
   HardDrive, Play, Hash
 } from 'lucide-react'
-import { formatTimeAgo, formatFileSize } from '@/lib/utils'
+import { formatTimeAgo, formatFileSize, resolveFileUrl } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import { triggerCategorization } from '@/lib/categorize'
 import type { Item, Folder } from '@/types'
 
 interface Props {
@@ -62,15 +63,26 @@ export function ItemDetailModal({ item, folders, onClose, onDelete, onToggleStar
   const [tagInput, setTagInput] = useState('')
   const [savingTags, setSavingTags] = useState(false)
   const [tagError, setTagError] = useState('')
+  const [retryingAI, setRetryingAI] = useState(false)
+  const [aiRetried, setAiRetried] = useState(false)
 
   const folder = folders.find((f) => f.id === item.folder_id)
   const supabase = createClient()
+  const resolvedFileUrl = resolveFileUrl(item.file_url)
 
   async function handleCopy() {
     const text = item.content || item.link_url || ''
     await navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  async function retryAI() {
+    setRetryingAI(true)
+    triggerCategorization(item.id, item, folders.map((f) => f.name))
+    await new Promise((r) => setTimeout(r, 3000))
+    setRetryingAI(false)
+    setAiRetried(true)
   }
 
   function handleDelete() {
@@ -171,9 +183,9 @@ export function ItemDetailModal({ item, folders, onClose, onDelete, onToggleStar
               </div>
             )}
 
-            {item.type === 'image' && item.file_url && (
+            {item.type === 'image' && resolvedFileUrl && (
               <div className="rounded-xl overflow-hidden border border-[#e5e7eb] bg-[#f4f4f4]">
-                <img src={item.file_url} alt={item.file_name ?? ''} className="w-full object-contain max-h-72" />
+                <img src={resolvedFileUrl} alt={item.file_name ?? ''} className="w-full object-contain max-h-72" />
                 {item.file_name && (
                   <div className="px-3 py-2 border-t border-[#e5e7eb]">
                     <p className="text-xs text-[#888888]">{item.file_name}{item.file_size_bytes ? ` · ${formatFileSize(item.file_size_bytes)}` : ''}</p>
@@ -258,8 +270,8 @@ export function ItemDetailModal({ item, folders, onClose, onDelete, onToggleStar
           </div>
 
           {/* ── AI Analysis ── */}
-          {(item.ai_description || item.ai_suggested_folder) && (
-            <div className="px-5 pb-3">
+          <div className="px-5 pb-3">
+            {(item.ai_description || item.ai_suggested_folder) ? (
               <div className="bg-gradient-to-br from-[#f0f9ff] to-[#fafbff] rounded-xl p-4 border border-[#bae6fd]">
                 <div className="flex items-center gap-1.5 mb-2">
                   <Sparkles size={13} className="text-[#0369a1]" />
@@ -283,8 +295,26 @@ export function ItemDetailModal({ item, folders, onClose, onDelete, onToggleStar
                   </div>
                 )}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="bg-[#f8f9fa] rounded-xl p-4 border border-[#e5e7eb] flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={13} className="text-[#888888]" />
+                  <span className="text-xs text-[#888888]">
+                    {aiRetried ? 'AI analysis running — check back in a moment' : 'No AI analysis yet'}
+                  </span>
+                </div>
+                {!aiRetried && (
+                  <button
+                    onClick={retryAI}
+                    disabled={retryingAI}
+                    className="text-xs text-[#0891b2] hover:text-[#0e7490] font-medium shrink-0 transition-colors disabled:opacity-50"
+                  >
+                    {retryingAI ? 'Analyzing…' : 'Run AI →'}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* ── Tags ── */}
           <div className="px-5 pb-3">
@@ -384,9 +414,9 @@ export function ItemDetailModal({ item, folders, onClose, onDelete, onToggleStar
             </ActionBtn>
           )}
 
-          {(item.type === 'file' || item.type === 'image') && item.file_url && (
+          {(item.type === 'file' || item.type === 'image') && resolvedFileUrl && (
             <a
-              href={item.file_url}
+              href={resolvedFileUrl}
               download={item.file_name || true}
               target="_blank"
               rel="noopener"

@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Search, X, Star } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
@@ -33,13 +33,19 @@ const TYPE_FILTERS: { id: TypeFilter; label: string }[] = [
 export default function VaultPage() {
   const router = useRouter()
   const { user, signOut } = useAuth()
-  const { items, loading, hasMore, loadMore, deleteItem, toggleStar, moveToFolder } = useVault()
+  const { items, loading, hasMore, loadMore, deleteItem, toggleStar, moveToFolder, refresh } = useVault()
   const { folders, loading: foldersLoading, createFolder } = useFolders()
   const { toasts, addToast, dismiss } = useToast()
 
-  // Refresh the router cache once on mount so a post-auth redirect
-  // always gets fresh data rather than a stale static render.
+  // Refresh router cache on mount (post-auth stale render fix)
   useEffect(() => { router.refresh() }, [])
+
+  // Re-fetch items whenever the tab becomes visible (e.g. user saved from extension)
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') refresh() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
 
   const [showCapture, setShowCapture] = useState(false)
   const [showNewFolder, setShowNewFolder] = useState(false)
@@ -47,6 +53,13 @@ export default function VaultPage() {
   const [moveItem, setMoveItem] = useState<Item | null>(null)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
+
+  // Keep selectedItem in sync when items update (star, AI description, tags, etc.)
+  useEffect(() => {
+    if (!selectedItem) return
+    const updated = items.find((i) => i.id === selectedItem.id)
+    if (updated) setSelectedItem(updated)
+  }, [items])
 
   const filtered = useMemo(() => {
     let result = items

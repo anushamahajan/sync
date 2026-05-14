@@ -6,7 +6,7 @@ import {
   Star, MoreVertical, FolderOpen, Copy, Download, Trash2,
   ExternalLink, Sparkles, Hash
 } from 'lucide-react'
-import { formatTimeAgo, formatFileSize, getDomainFromUrl, truncate, getYouTubeThumbnail } from '@/lib/utils'
+import { formatTimeAgo, formatFileSize, getDomainFromUrl, truncate, getYouTubeThumbnail, resolveFileUrl } from '@/lib/utils'
 import type { Item, Folder } from '@/types'
 
 interface Props {
@@ -47,9 +47,9 @@ export function FeedCard({ item, folders, onDelete, onToggleStar, onMove, onOpen
   }
 
   function handleDownload() {
-    if (!item.file_url) return
+    if (!resolvedFileUrl) return
     const a = document.createElement('a')
-    a.href = item.file_url
+    a.href = resolvedFileUrl
     a.download = item.file_name || 'download'
     document.body.appendChild(a)
     a.click()
@@ -66,6 +66,7 @@ export function FeedCard({ item, folders, onDelete, onToggleStar, onMove, onOpen
 
   const ytThumb = item.type === 'video_link' && item.link_url ? getYouTubeThumbnail(item.link_url) : null
   const hasAI = !!item.ai_description
+  const resolvedFileUrl = resolveFileUrl(item.file_url)
 
   return (
     <div
@@ -75,9 +76,9 @@ export function FeedCard({ item, folders, onDelete, onToggleStar, onMove, onOpen
       <div className="flex gap-3">
         {/* Thumbnail or type icon */}
         <div className="shrink-0 mt-0.5">
-          {item.type === 'image' && item.file_url ? (
+          {item.type === 'image' && resolvedFileUrl ? (
             <img
-              src={item.file_url}
+              src={resolvedFileUrl}
               alt=""
               className="w-12 h-12 rounded-lg object-cover border border-[#e5e7eb]"
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}

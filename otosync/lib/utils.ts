@@ -69,3 +69,11 @@ export function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text
   return text.slice(0, maxLength).trimEnd() + '…'
 }
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://agtlsmwswiexxyickqnz.supabase.co'
+
+export function resolveFileUrl(url?: string): string {
+  if (!url) return ''
+  if (url.startsWith('http')) return url
+  return `${SUPABASE_URL}/storage/v1/object/public/vault/${url}`
+}
