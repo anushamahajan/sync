@@ -16,6 +16,7 @@ export interface Item {
   ai_suggested_folder?: string
   folder_id?: string
   source_device?: string
+  tags?: string[]
   is_starred: boolean
   created_at: string
   updated_at: string

@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useMemo, use } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Search, X, Sparkles } from 'lucide-react'
+import { ArrowLeft, Plus, Search, X, Sparkles, MessageSquare } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useVault } from '@/hooks/useVault'
 import { useFolders } from '@/hooks/useFolders'
@@ -56,10 +56,10 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
     setMoveItem(null)
   }
 
-  async function handleDelete(id: string) {
-    await deleteItem(id)
+  async function handleDelete(itemId: string) {
+    await deleteItem(itemId)
     addToast('Item deleted', 'info')
-    if (selectedItem?.id === id) setSelectedItem(null)
+    if (selectedItem?.id === itemId) setSelectedItem(null)
   }
 
   return (
@@ -73,7 +73,7 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
 
       <div className="flex-1 flex flex-col min-w-0 pb-16 md:pb-0">
         {/* Header */}
-        <header className="flex items-center gap-3 px-4 py-3 border-b border-[#e5e7eb] bg-white">
+        <header className="flex items-center gap-3 px-4 py-3 border-b border-[#e5e7eb] bg-white shrink-0">
           <Link href="/vault" className="text-[#888888] hover:text-[#111111] transition-colors">
             <ArrowLeft size={18} />
           </Link>
@@ -83,7 +83,9 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
               <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: folder.color }} />
             )}
             <h1 className="text-base font-semibold truncate">{folder?.name ?? 'Folder'}</h1>
-            <span className="text-xs text-[#888888] shrink-0">{items.length} item{items.length !== 1 ? 's' : ''}</span>
+            <span className="text-xs text-[#888888] shrink-0 bg-[#f4f4f4] px-2 py-0.5 rounded-full">
+              {items.length} item{items.length !== 1 ? 's' : ''}
+            </span>
           </div>
 
           <button
@@ -96,13 +98,14 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
         </header>
 
         {/* Tab bar */}
-        <div className="flex border-b border-[#e5e7eb] px-4">
-          <TabButton active={tab === 'items'} onClick={() => setTab('items')}>Items</TabButton>
+        <div className="flex border-b border-[#e5e7eb] px-4 shrink-0">
+          <TabButton active={tab === 'items'} onClick={() => setTab('items')}>
+            Items
+          </TabButton>
           <TabButton active={tab === 'chat'} onClick={() => setTab('chat')}>
             <span className="flex items-center gap-1.5">
               <Sparkles size={13} />
-              Ask AI
-              <span className="text-[10px] bg-[#f0f9ff] text-[#0369a1] px-1.5 py-0.5 rounded-full font-medium ml-0.5">Soon</span>
+              Chat with AI
             </span>
           </TabButton>
         </div>
@@ -110,8 +113,8 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
         {/* Content */}
         {tab === 'items' ? (
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Search inside folder */}
-            <div className="px-4 py-2.5 border-b border-[#e5e7eb]">
+            {/* Search */}
+            <div className="px-4 py-2.5 border-b border-[#e5e7eb] shrink-0">
               <div className="relative max-w-md">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888888]" />
                 <input
@@ -140,8 +143,8 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
                     <p className="text-sm text-[#888888]">No results for "<strong>{search}</strong>"</p>
                   ) : (
                     <>
-                      <p className="text-sm text-[#333333] font-medium mb-2">No items in this folder</p>
-                      <p className="text-xs text-[#888888] mb-6">Add items from the vault or capture directly here</p>
+                      <p className="text-sm text-[#333333] font-medium mb-2">No items in this folder yet</p>
+                      <p className="text-xs text-[#888888] mb-6">Add items or move them from your vault</p>
                       <button
                         onClick={() => setShowCapture(true)}
                         className="px-5 py-2.5 bg-[#0891b2] hover:bg-[#0e7490] text-white rounded-xl text-sm font-medium transition-colors"
@@ -152,7 +155,7 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
                   )}
                 </div>
               ) : (
-                <div className="space-y-3 max-w-2xl">
+                <div className="space-y-3 max-w-3xl">
                   {filtered.map((item) => (
                     <FeedCard
                       key={item.id}
@@ -164,13 +167,27 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
                       onOpen={setSelectedItem}
                     />
                   ))}
+
+                  {/* AI chat CTA at bottom of items list */}
+                  {items.length > 0 && (
+                    <button
+                      onClick={() => setTab('chat')}
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-[#bae6fd] bg-[#f0f9ff] hover:bg-[#e0f2fe] text-[#0891b2] text-sm font-medium transition-colors mt-2"
+                    >
+                      <MessageSquare size={15} />
+                      Chat with AI about these {items.length} items →
+                    </button>
+                  )}
                 </div>
               )}
             </main>
           </div>
         ) : (
           <div className="flex-1 overflow-hidden">
-            <FolderChat folderName={folder?.name ?? 'this folder'} itemCount={items.length} />
+            <FolderChat
+              folderName={folder?.name ?? 'this folder'}
+              items={items}
+            />
           </div>
         )}
       </div>
@@ -220,12 +237,16 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
   )
 }
 
-function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function TabButton({ active, onClick, children }: {
+  active: boolean; onClick: () => void; children: React.ReactNode
+}) {
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors -mb-px ${
-        active ? 'border-[#0891b2] text-[#0891b2]' : 'border-transparent text-[#888888] hover:text-[#333333]'
+      className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors -mb-px ${
+        active
+          ? 'border-[#0891b2] text-[#0891b2]'
+          : 'border-transparent text-[#888888] hover:text-[#333333]'
       }`}
     >
       {children}

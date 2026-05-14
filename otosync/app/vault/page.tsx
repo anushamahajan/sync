@@ -99,16 +99,16 @@ export default function VaultPage() {
 
       <div className="flex-1 flex flex-col min-w-0 pb-16 md:pb-0">
         {/* Top bar */}
-        <header className="flex items-center gap-3 px-4 py-3 border-b border-[#e5e7eb] bg-white">
+        <header className="flex items-center gap-3 px-4 py-3 border-b border-[#e5e7eb] bg-white shrink-0">
           <span className="text-base font-bold text-[#111111] md:hidden">Sync</span>
 
           {/* Search */}
-          <div className="flex-1 relative max-w-md">
+          <div className="flex-1 relative">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888888]" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search…"
+              placeholder="Search your vault…"
               className="w-full pl-9 pr-8 py-2 text-sm bg-[#f4f4f4] rounded-xl outline-none focus:bg-white focus:ring-1 focus:ring-[#0891b2] transition-all"
             />
             {search && (
@@ -120,7 +120,7 @@ export default function VaultPage() {
 
           <button
             onClick={() => setShowCapture(true)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-[#0891b2] hover:bg-[#0e7490] text-white rounded-xl text-sm font-medium transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 bg-[#0891b2] hover:bg-[#0e7490] text-white rounded-xl text-sm font-semibold transition-colors shrink-0"
           >
             <Plus size={16} />
             <span className="hidden sm:inline">Capture</span>
@@ -155,7 +155,7 @@ export default function VaultPage() {
           ) : filtered.length === 0 ? (
             <EmptyState search={search} typeFilter={typeFilter} onCapture={() => setShowCapture(true)} />
           ) : (
-            <div className="space-y-3 max-w-2xl">
+            <div className="space-y-3 max-w-3xl">
               {filtered.map((item) => (
                 <FeedCard
                   key={item.id}
