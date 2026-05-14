@@ -1,8 +1,10 @@
 'use client'
 
 export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Plus, Search, X, Star } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useVault, useStarredItems } from '@/hooks/useVault'
@@ -29,10 +31,15 @@ const TYPE_FILTERS: { id: TypeFilter; label: string }[] = [
 ]
 
 export default function VaultPage() {
+  const router = useRouter()
   const { user, signOut } = useAuth()
   const { items, loading, hasMore, loadMore, deleteItem, toggleStar, moveToFolder } = useVault()
   const { folders, loading: foldersLoading, createFolder } = useFolders()
   const { toasts, addToast, dismiss } = useToast()
+
+  // Refresh the router cache once on mount so a post-auth redirect
+  // always gets fresh data rather than a stale static render.
+  useEffect(() => { router.refresh() }, [])
 
   const [showCapture, setShowCapture] = useState(false)
   const [showNewFolder, setShowNewFolder] = useState(false)

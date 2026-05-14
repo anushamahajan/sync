@@ -1,8 +1,10 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { log } from '@/lib/log'
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
+  const { pathname } = request.nextUrl
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,20 +25,31 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { session }, error } = await supabase.auth.getSession()
 
-  const { pathname } = request.nextUrl
+  if (error) {
+    log('middleware', 'error', 'getSession failed', { pathname, error: error.message })
+  }
 
   const protectedRoutes = ['/vault', '/folder', '/settings', '/starred', '/folders']
   const isProtected = protectedRoutes.some((r) => pathname.startsWith(r))
 
+  log('middleware', 'info', 'request', {
+    pathname,
+    hasSession: !!session,
+    userId: session?.user?.id ?? null,
+    isProtected,
+  })
+
   if (!session && isProtected) {
+    log('middleware', 'warn', 'unauthenticated — redirecting to /', { pathname })
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)
   }
 
   if (session && pathname === '/') {
+    log('middleware', 'info', 'authenticated on / — redirecting to /vault', { userId: session.user.id })
     const url = request.nextUrl.clone()
     url.pathname = '/vault'
     return NextResponse.redirect(url)

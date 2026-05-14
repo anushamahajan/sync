@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { createClient } from '@/lib/supabase/server'
+import { log } from '@/lib/log'
 import type { Item } from '@/types'
 
 function buildContentSummary(item: Item): string {
@@ -16,8 +17,11 @@ function buildContentSummary(item: Item): string {
 }
 
 export async function POST(req: NextRequest) {
+  log('api/categorize', 'info', 'request received')
+
   const apiKey = process.env.OPENAI_API_KEY?.trim()
   if (!apiKey) {
+    log('api/categorize', 'error', 'OPENAI_API_KEY not set')
     return NextResponse.json(
       { ok: false, error: 'OpenAI is not configured (set OPENAI_API_KEY).' },
       { status: 503 }
@@ -27,9 +31,13 @@ export async function POST(req: NextRequest) {
   const openai = new OpenAI({ apiKey })
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) {
+    log('api/categorize', 'warn', 'unauthenticated request')
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
 
   const { itemId, item, folderNames }: { itemId: string; item: Item; folderNames: string[] } = await req.json()
+  log('api/categorize', 'info', 'categorizing', { itemId, type: item.type, userId: user.id })
 
   const contentSummary = buildContentSummary(item)
 
@@ -68,6 +76,11 @@ Example: {"description": "Resume for product manager roles", "suggested_folder":
       .eq('id', itemId)
       .eq('user_id', user.id)
 
+    log('api/categorize', 'info', 'done', {
+      itemId,
+      description: result.description,
+      suggested_folder: result.suggested_folder,
+    })
     return NextResponse.json({ ok: true, description: result.description, suggested_folder: result.suggested_folder })
   } catch (err: unknown) {
     const status =
@@ -75,13 +88,16 @@ Example: {"description": "Resume for product manager roles", "suggested_folder":
         ? (err as { status: number }).status
         : undefined
     if (status === 401) {
-      console.error('Categorization failed: invalid or revoked OpenAI API key')
+      log('api/categorize', 'error', 'OpenAI key invalid or revoked', { itemId })
       return NextResponse.json(
         { ok: false, error: 'OpenAI API key is invalid or expired. Update OPENAI_API_KEY.' },
         { status: 502 }
       )
     }
-    console.error('Categorization failed:', err instanceof Error ? err.message : err)
+    log('api/categorize', 'error', 'categorization failed', {
+      itemId,
+      error: err instanceof Error ? err.message : String(err),
+    })
     return NextResponse.json({ ok: false, error: 'Categorization failed' }, { status: 502 })
   }
 }
