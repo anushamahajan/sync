@@ -1,6 +1,6 @@
 const SUPABASE_URL = 'https://agtlsmwswiexxyickqnz.supabase.co'
 const SUPABASE_ANON_KEY = 'sb_publishable_RpTJ71-Kf40iu_fRn5RL4g_7gRwxxOt'
-const APP_ORIGINS = ['http://localhost:3000', 'https://sync-app.vercel.app']
+const APP_ORIGINS = ['https://otosync.vercel.app', 'http://localhost:3000']
 const MAX_FILE_BYTES = 50 * 1024 * 1024  // 50 MB
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────

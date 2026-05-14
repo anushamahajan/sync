@@ -29,6 +29,7 @@
   "permissions": ["storage", "tabs", "activeTab", "scripting"],
   "host_permissions": [
     "https://agtlsmwswiexxyickqnz.supabase.co/*",
+    "https://otosync.vercel.app/*",
     "http://localhost:3000/*"
   ]
 }
